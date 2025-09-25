@@ -1,1 +1,0 @@
-// This file will be used to benchmark hw1.2.go performance
