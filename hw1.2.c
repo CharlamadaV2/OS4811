@@ -5,6 +5,22 @@
 
 #define NUM_GEN 5 // Amount of numbers to generate
 
+// Description:
+// There are two threads accessing the same memory curr_num and cond var data_ready
+// Thread 1 producer will write numbers onto the shared variable
+// Thread 2 consumer will read the number inside the shared variable
+/*
+    The process starts with both threads trying to lock the mutex
+    T1 will get the lock because of the conditional variable data_ready
+    This means when data_ready is 0, T2 will wait or 1, T1 will wait
+    When T1 gets the lock, T2 will be waiting for the unlock
+    T1 will perform the number generation and make changes to the global var
+    T1 will set the state to 1, then unlock the mutex
+    T2 will now be able to lock the mutex and perform its action
+    Once T2 completes its action it will then set the state to not ready and unlock the mutex
+    Once this finishes the threads will finish their first loop.
+*/
+
 // Shared variable
 int curr_num = 0; // Initialize to avoid undefined behavior
 int data_ready = 0; // Flag to indicate data is ready for consumer
