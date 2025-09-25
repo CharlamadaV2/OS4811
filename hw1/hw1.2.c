@@ -23,7 +23,7 @@
 
 // Shared variable
 int curr_num = 0; // Initialize to avoid undefined behavior
-int data_ready = 0; // Flag to indicate data is ready for consumer
+int data_ready = 0; // State variable
 
 // Mutex and condition variables
 pthread_mutex_t mutex;
@@ -34,7 +34,7 @@ void *producer_t(void *arg) {
         pthread_mutex_lock(&mutex);
 
         // Wait if consumer hasn’t processed the previous number
-        if (data_ready) {
+        while (data_ready) {
             pthread_cond_wait(&producer_cond, &mutex);
         }
 
@@ -55,7 +55,7 @@ void *consumer_t(void *arg) {
         pthread_mutex_lock(&mutex);
 
         // Wait if no new data is ready
-        if (!data_ready) {
+        while (!data_ready) {
             pthread_cond_wait(&consumer_cond, &mutex);
         }
 
