@@ -11,7 +11,7 @@
 // Thread 2 consumer will read the number inside the shared variable
 /*
     The process starts with both threads trying to lock the mutex
-    T1 will get the lock because of the conditional variable data_ready
+    T1 will get the lock because of the flag data_ready
     This means when data_ready is 0, T2 will wait or 1, T1 will wait
     When T1 gets the lock, T2 will be waiting for the unlock
     T1 will perform the number generation and make changes to the global var
