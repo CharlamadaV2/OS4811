@@ -34,7 +34,7 @@ void *producer_t(void *arg) {
         pthread_mutex_lock(&mutex);
 
         // Wait if consumer hasn’t processed the previous number
-        while (data_ready) {
+        if (data_ready) {
             pthread_cond_wait(&producer_cond, &mutex);
         }
 
@@ -55,7 +55,7 @@ void *consumer_t(void *arg) {
         pthread_mutex_lock(&mutex);
 
         // Wait if no new data is ready
-        while (!data_ready) {
+        if (!data_ready) {
             pthread_cond_wait(&consumer_cond, &mutex);
         }
 
