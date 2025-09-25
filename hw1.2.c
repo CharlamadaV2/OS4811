@@ -2,54 +2,87 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
-#define max_size 5 //Will be used to define the amount of incrimentations
 
-	// This program will computer the pipe process of consumer and producer, but using threads
-	// Initially we had two processors, one generating numbers, one taking numbers
-	// We only have to print 5 numbers, 2 threads,
-void* thread(){
+#define NUM_GEN 5 // Amount of numbers to generate
 
+// Shared variable
+int curr_num = 0; // Initialize to avoid undefined behavior
+int data_ready = 0; // Flag to indicate data is ready for consumer
+
+// Mutex and condition variables
+pthread_mutex_t mutex;
+pthread_cond_t producer_cond, consumer_cond;
+
+void *producer_t(void *arg) {
+    for (int i = 1; i <= NUM_GEN; i++) {
+        pthread_mutex_lock(&mutex);
+
+        // Wait if consumer hasn’t processed the previous number
+        while (data_ready) {
+            pthread_cond_wait(&producer_cond, &mutex);
+        }
+
+        // Produce number
+        curr_num = i;
+        printf("Producer: %d\n", curr_num);
+
+        // Signal consumer that data is ready
+        data_ready = 1;
+        pthread_cond_signal(&consumer_cond);
+        pthread_mutex_unlock(&mutex);
+    }
+    return NULL;
 }
 
-	// 2 Threads will generate every other number (less than equal to 5) from their given start number
-		// Incriment from start number (0 + 1, or 1 + 1)
-		// Alternatively increment from previous number
-		// Attempt Lock
+void *consumer_t(void *arg) {
+    for (int i = 0; i < NUM_GEN; i++) {
+        pthread_mutex_lock(&mutex);
 
-		// If can't lock 
-			//Enter queue
-			//Wait
+        // Wait if no new data is ready
+        while (!data_ready) {
+            pthread_cond_wait(&consumer_cond, &mutex);
+        }
 
-		// If lock (will be accessing the critical section)
-			//Print curr number
-			printf();
-			//Send number to consumer
-			write();
-				
-			//Then unlock
+        // Consume number
+        printf("Consumer: %d\n", curr_num);
 
-		// Loop while curr num is <= 5
+        // Signal producer that data has been consumed
+        data_ready = 0;
+        pthread_cond_signal(&producer_cond);
+        pthread_mutex_unlock(&mutex);
+    }
+    return NULL;
+}
 
-		// Delete process
+int main() {
+    pthread_t producer, consumer;
 
-	// As a result it will prevent wait time on generating the number
-	// Will only wait on the consumer printing the number
+    // Initialize mutex and condition variables
+    if (pthread_mutex_init(&mutex, NULL) != 0) {
+        perror("Mutex initialization failed");
+        return 1;
+    }
+    if (pthread_cond_init(&producer_cond, NULL) != 0 ||
+        pthread_cond_init(&consumer_cond, NULL) != 0) {
+        perror("Condition variable initialization failed");
+        return 1;
+    }
 
-	//Consumer (critical section) will be taking inputs from either threads 
-	// depending on who is currently accesing the critical section.	
-	// Read request
-	read();
-	// Print number taken
-	printf();
+    // Create threads
+    if (pthread_create(&producer, NULL, producer_t, NULL) != 0 ||
+        pthread_create(&consumer, NULL, consumer_t, NULL) != 0) {
+        perror("Thread creation failed");
+        return 1;
+    }
 
-	// Subsequently, we will need to set up a queue for locking access.
-		//Thread 1 PID < Thread 2, therefore first contact
+    // Wait for threads to finish
+    pthread_join(producer, NULL);
+    pthread_join(consumer, NULL);
 
-		// The other thread will be in a ready state meaning it will get access as soon as consumer is unlocked
+    // Destroy mutex and condition variables
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&producer_cond);
+    pthread_cond_destroy(&consumer_cond);
 
-int main(){
-	pthread_t thread1, thread2; // Thread handles
-    int id1 = 1, id2 = 2;
-
-
+    return 0;
 }
