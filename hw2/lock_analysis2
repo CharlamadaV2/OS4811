@@ -1,0 +1,29 @@
+2.
+
+The lock given is incorrect. Using the LL/SC lock depends on a simple constant: when flag == 0, the lock is free, and when flag == 1, the lock is held. In the modified code, the unlock operation (flag = flag - 1) assumes that the flag is always 1 at the time of release. However, this assumption cannot be guaranteed, and the code cannot force or restore the constant if an issue happens. For example, if unlock() is called when flag != 1, the lock algorithm doesn’t works as intended. In this part, the flag can move outside the right set {0,1}, and other threads using LL/SC on the variable may see unexpected values and transitions. Since the algorithm counts on only one successful SC at a time, once the constant is broken, the algorithm can’t ensure mutual exclusion of the threads.
+
+Malicious Scheduler:
+
+Result of the Malicious Scheduler: Thread B and thread C both continues into the part where mutual exclusion is broken.
+
+Step 1 -buggy/unexpected unlock
+
+    · Thread A (bug) calls unlock() but, this don't hold lock.
+
+    · flag = flag - 1 = 0 - 1 = -1
+
+    · Now flag == -1 (illegal/undefined).
+
+Step 2 -Thread B tries the lock
+
+    · Thread B performs LL(flag) and reads -1.
+
+    · It computes SC to set flag = 1 (writes 1).
+
+    · SC works, so Thread B sets flag = 1 and continues into the part believing it holds the lock.
+
+Step 3 -Thread C attempts lock
+
+    · Thread C executes LL(flag) and may read 1 (value of thread B sets).
+
+    · If scheduling/interleaving allows, Thread C’s SC may also have success, having C enter the part as well.
