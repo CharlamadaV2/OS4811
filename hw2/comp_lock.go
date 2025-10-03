@@ -14,8 +14,8 @@ import (
 
 // TicketLock implements a ticket lock
 type TicketLock struct {
-	nowServing uint64 // Turn
-	nextTicket uint64 // Ticket
+	nowServing uint64
+	nextTicket uint64
 }
 
 func (tl *TicketLock) Lock() {
@@ -81,17 +81,15 @@ func benchmarkLock(name string, lock interface{}, numGoroutines int, iterations 
 
 	wg.Wait()
 	duration := time.Since(start).Seconds()
-	throughput := float64(numGoroutines*iterations) / duration
-	fmt.Printf("%s (G: %d, Iter: %d): %.4fs, %.0f ops/sec, %.2f ns/op\n",
-		name, numGoroutines, iterations, duration, throughput, 
-		duration*1e9/float64(numGoroutines*iterations))
+	fmt.Printf("%s (G: %d, Iter: %d): %.4fs\n",
+		name, numGoroutines, iterations, duration)
 	return duration * 1e9 / float64(numGoroutines*iterations)
 }
 
 func main() {
 	// Test configurations
-	goroutineCounts := []int{1, 10, 50, 100}
-	iterations := 10000
+	goroutineCounts := []int{1, 10}
+	iterations := 100
 
 	for _, g := range goroutineCounts {
 		fmt.Printf("\nTesting with %d goroutines\n", g)
