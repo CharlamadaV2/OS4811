@@ -19,9 +19,12 @@ type TicketLock struct {
 }
 
 func (tl *TicketLock) Lock() {
+	fmt.Printf("nextTicket: %d\n",atomic.LoadUint64(&tl.nextTicket))
 	myTicket := atomic.AddUint64(&tl.nextTicket, 1) - 1
+	fmt.Printf("myTicket: %d\n", myTicket)
 	for atomic.LoadUint64(&tl.nowServing) != myTicket {
 		runtime.Gosched() // Yield to other goroutines
+		
 	}
 }
 
@@ -89,7 +92,7 @@ func benchmarkLock(name string, lock interface{}, numGoroutines int, iterations 
 func main() {
 	// Test configurations
 	goroutineCounts := []int{1, 10}
-	iterations := 100
+	iterations := 1
 
 	for _, g := range goroutineCounts {
 		fmt.Printf("\nTesting with %d goroutines\n", g)

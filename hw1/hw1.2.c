@@ -5,6 +5,13 @@
 
 #define NUM_GEN 5 // Amount of numbers to generate
 
+//Self notes:
+/*
+    For processes that use multiple threads, 
+    we can create a new function for the wait code.
+    This was we can reduce code complexity
+*/
+
 // Description:
 // There are two threads accessing the same memory curr_num and cond var data_ready
 // Thread 1 producer will write numbers onto the shared variable
