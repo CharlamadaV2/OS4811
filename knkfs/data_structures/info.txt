@@ -1,0 +1,6 @@
+Information on what will be inside this folder
+
+What each struct file will be used for
+
+
+

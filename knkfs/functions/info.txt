@@ -1,0 +1,3 @@
+Information on the definition of each functions
+
+Information on error definitions
