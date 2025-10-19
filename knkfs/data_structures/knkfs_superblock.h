@@ -19,7 +19,7 @@
 #define offset_checksum 0x01BD
 
 //Byte size for the 
-struct superblock{
+typedef struct superblock_properties{
     int64_t time_stamp; // Time Stamp of when volume has changed.
     uint64_t data_size; // Size of Data Area in blocks
     uint64_t index_size; // Size of Index Area in bytes
@@ -29,6 +29,6 @@ struct superblock{
     uint32_t rsvd_blocks; // Number of reserved blocks
     uint8_t block_size; // log(x+7) of block size (x = 2 = 512)
     uint8_t crc; // Zero sum of bytes abov
-};
+} superblock;
 
 
