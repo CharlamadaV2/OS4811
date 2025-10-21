@@ -1,6 +1,8 @@
 {
     "ros.distro": "humble",
     "files.associations": {
-        "system_error": "c"
+        "system_error": "c",
+        "stdio.h": "c",
+        "lockfree_con_queue.h": "c"
     }
 }
