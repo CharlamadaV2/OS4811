@@ -1,21 +1,23 @@
-# Design
 Two-Lock Queue
-- Uses two sync.Mutex locks — one for head, one for tail.
-- Operations on head and tail can occur concurrently
-- Based on Figure 29.9 from *Operating Systems: Three Easy Pieces (OSTEP)*.
-- Simple, safe, performs well under low- to moderate contention.
+
+Employs two sync.Mutex locks: one for the head and one for the tail.
+Allows concurrent operations on the head and tail.
+Derived from Figure 29.9 in Operating Systems: Three Easy Pieces (OSTEP).
+Simple, thread-safe, and efficient under low to moderate contention.
 
 Michael–Scott Lock-Free Queue
-- Uses Go atomic.Pointer and CAS loops to avoid locks
-- Threads “help” each other by advancing the tail pointer when it lags behind.
-- Based on Michael & Scott (1996) — *“Simple, Fast, and Practical Non-Blocking and Blocking Concurrent Queue Algorithms”*.
-- Scales better under high contention, but more complex with higher constant overhead.
 
-# Benchmark Design
-- Tests both queue types under multiple producer/consumer counts.
-- Measures enqueue/dequeue total runtime.
-- Can adjust workload size and artificial delay to simulate different contention levels (adjust parameters directly inside main.go).
-- The structure of the benchmark was designed with assistance from ChatGPT. Group implemented the design, organization and syntax.
+Utilizes Go’s atomic.Pointer and Compare-And-Swap (CAS) loops to eliminate locks.
+Threads collaborate by advancing the tail pointer when it falls behind.
+Based on the 1996 paper by Michael & Scott, “Simple, Fast, and Practical Non-Blocking and Blocking Concurrent Queue Algorithms”.
+Offers better scalability under high contention but is more complex with increased constant overhead.
+
+Benchmark Design
+
+Evaluates both queue implementations with varying numbers of producers and consumers.
+Measures total runtime for enqueue and dequeue operations.
+Supports adjustable workload sizes and artificial delays to simulate different contention levels (configured directly in main.go).
+Benchmark structure designed with assistance from ChatGPT, with implementation, organization, and syntax handled by the group.
 
 # How to Run
 ```bash

@@ -1,9 +1,5 @@
-// ms_queue.go
+// ms_queue.go short for michael scott queue
 // lock-free queue based on the Michael and Scott algorithm
-// (“Simple, Fast, and Practical Non-Blocking and Blocking Concurrent Queue Algorithms”,
-// PODC 1996, University of Rochester).
-// code adapted to Go using atomic.Pointer and CompareAndSwap
-// the "count" field from the original paper is omitted (ABA assumed absent).
 
 package main
 
