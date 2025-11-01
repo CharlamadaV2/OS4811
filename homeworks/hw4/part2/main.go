@@ -1,6 +1,5 @@
 // main.go
-// design of the benchmark (multi-producer, multi-consumer with adjustable workloads)
-// was assisted by ChatGPT for structure and clarity. logic was then reviewed, simplified, and customized
+// I used ChatGPT to help me
 package main
 
 import (

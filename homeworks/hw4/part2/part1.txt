@@ -1,0 +1,18 @@
+An ABA problem occurs when a CAS check is implemented, resulting in a value that changes from A to B and then back to A. However, the issue arises between the checks, because it reverts to the original value, the system can’t tell that it was temporarily changed. The algorithm presented in class experiences this issue because Q->tail goes to NULL, then myNode, then back to NULL in this line.
+CAS(&Q–>Tail->next, NULL, myNode)
+
+Michael, M. M., & Scott, M. L. (1995, December). Correction of a memory management method for lock-free data structures (Technical Report TR599). University of Rochester.
+https://www.cs.rochester.edu/u/scott/papers/1995_TR599.pdf
+
+Why credible: The first source by Michael and Scott is credible because it was written by two computer science researchers from the University of Rochester. Their paper is a technical report that explains the ABA problem in detail and is used in college-level computer science courses.
+
+Baeldung. (2024, March 18). The ABA problem in concurrency.
+https://www.baeldung.com/cs/aba-concurrency
+
+Why credible: The Baeldung article is credible because it comes from a trusted educational website that explains computer science topics in a simple and accurate way. The site is often used by students and developers to learn about programming and technical concepts.
+
+Desrochers, C. (2014, February 23). Solving the ABA problem for lock-free free lists.
+https://moodycamel.com/blog/2014/solving-the-aba-problem-for-lock-free-free-lists
+
+Why credible: The Moodycamel blog post is credible because it was written by a professional software developer who specializes in high-performance programming. The author gives a real-world explanation of how to solve the ABA problem, showing practical experience with concurrency.
+
