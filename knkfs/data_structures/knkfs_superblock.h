@@ -1,5 +1,9 @@
 #include <stdint.h>
 
+//The superblock contains metadata about the formatted file system
+// So technically the super block should contain data based on how the formatting tool wrote the file system
+// When the driver reads the superblock, it should ignore the reserved area (out of scope).
+
 //List of offsets for reserved for compatibility (using hex)
 #define offset_boot_code1 0x0000
 #define offset_bios 0x000B
@@ -7,6 +11,7 @@
 #define offset_partition 0x01BE
 #define offset_boot_signature 0x01FE
 
+//The formatting tool should create the file system based on the meta data
 //List of offsets for superblock
 #define offset_timestamp 0x0194
 #define offset_data 0x019C //Data area
