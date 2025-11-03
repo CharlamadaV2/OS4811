@@ -3,3 +3,4 @@
 
 //Function for Inode algorithm
 void create_inode();
+void wear_leveling();
