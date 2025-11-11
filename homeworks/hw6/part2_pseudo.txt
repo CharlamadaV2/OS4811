@@ -1,0 +1,11 @@
+Parent process runs containing its own virtual address space mapped to physical pages using page tables
+Fork call creates the child process
+On child creation, both child and parent page tables will initially point to the same pages in physical memory
+All the pages that the both processes share is marked as read only with a COW flag
+if the child or parent wants to write to the pages, the COW flag is triggered
+When triggered a the kernel allocates a new, free physical page from the system's page pool.
+Contents from the original page is copied over to the new page
+The process that triggered the flag will now map its virtual address to the new private page.
+Then the process that wanted to write to the page will write on the copy
+When the child process is done running it will free all of the Child's page table entries
+This means that any private pages allocated to the child from COW will be marked unused and returned to the free pool
