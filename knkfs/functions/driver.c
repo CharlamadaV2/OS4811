@@ -12,3 +12,5 @@ Note: All structures, variables, and headers used will be stored in the formatte
 #include <stdio.h>
 #include <string.h>   // for memset, strlen, strcpy 
 #include <linux/spi/spidev.h> // functions for SPI devices (for EEPROM)
+
+//On driver start up it should set chip select to low 

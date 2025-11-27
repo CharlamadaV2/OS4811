@@ -1,3 +1,14 @@
 Information on the definition of each functions
 
 Information on error definitions
+
+SPI Notes:
+When chip select is set to low the slave is enabled; setting high will disable
+At each clock transition from low to high; the devices can transmit data to one another
+
+The EEPROM we are using has two device modes
+CPOL = 0, CPHA = 0
+CPOL = 1, CPHA = 1
+Input is latched for rising edge
+Data is output on falling edge
+    
