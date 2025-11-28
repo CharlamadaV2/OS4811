@@ -3,7 +3,7 @@
 // TODO: Figure out how to use SPI 
 // TODO: Figure out how to make wear leveling algorithm
 
-//EEPROM Information:
+//EEPROM Information:  M95P32-I M95P32-E 
 // 32 Mbits of page EEPROM
 // 64 Kbyte blocks
 // 4 Kbyte sectors
