@@ -18,14 +18,18 @@ or as an entirely erasable array
 
 // The EEPROM can take two modes (CPOL CPHA): '11' or '00'
 
-#include <linux/spi/spidev.h> // functions for SPI devices (for EEPROM)
 #include <stdint.h> //for uint
 #include <stdio.h> // for debugging
 #include <errno.h>  // For errno
 #include <stdlib.h>
+#include <unistd.h>
+
+//libraries for SPI
 #include <string.h>
+#include <fcntl.h>
 #include <sys/ioctl.h> // for erasing, turning on write protect
-#include <unistd.h> 
+#include <linux/spi/spidev.h> // functions for SPI devices (for EEPROM)
+
 
 #define num_blocks 16
 
@@ -34,6 +38,8 @@ or as an entirely erasable array
 #define FILE_TYPE_CONFIG 2
 #define FILE_TYPE_ASM 3
 #define FILE_TYPE_INVALID -1
+
+static int spi_fd = -1;  //Default is -1; no device connected
 
 typedef struct { //32 byte block
     char name[12];               // File name (up to 11 chars + null) 12 bytes
@@ -75,21 +81,63 @@ TypeEntry type_map[] = {
 /////////////////////////// Functions ////////////////////////////////
 
 void mount_fs(){ // Mounts driver to file system
-    //Set select to 0
-    //try to Read status register (RDSR)
-    //if failed; tell user
-    //tell user we are trying again
-    //if mounted; set mount to 1
-    //tell user file system is mounted
+    spi_fd = open("/dev/spidev0.0", O_RDWR);
+
+    if (spi_fd < 0) {
+        perror("Failed to open SPI device");
+        exit(1);
+    }
+
+    uint8_t mode = SPI_MODE_0;
+    uint8_t bits = 8;
+    uint32_t speed = 80000000; // 80 MHz
+
+    if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0) {
+        perror("Failed to set SPI mode");
+        exit(1);
+    }
+
+    ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
+    ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
+    
+    printf("SPI mounted successfully\n");
+
+}
+
+void help(){
+    printf("Available commands: write, read, ls, help, quit");
 }
 
 /* Store all meta data onto the EEPROM */
 
 /////////////////////// Create Files /////////////////////////////////
+void write_command(){
+    //Tell user to enter file name
+    printf("Enter file name: ");
+    char name[12];
+    scanf("%11s", name);  // Use %11s to prevent buffer overflow
+    
+    printf("Enter file type (txt, config, asm): ");
+    char type_str[20];
+    scanf("%19s", type_str);
+    
+    // Convert type string to value
+    int8_t type_value = get_type_value(type_str);
+    
+    // Check if conversion was successful
+    if (type_value == FILE_TYPE_INVALID) {
+        return;
+    }
 
-void create_file(char name[12], uint8_t type, uint16_t address){
+    printf("Creating file '%s' of type '%s'\n", name, type_str);
+    
+    // Call your read_file function with the validated type
+    create_file(name, type_value);
+}
+
+
+void create_file(char name[12], uint8_t type){
 //File name, File type, File address (offset)
-
 
 //Check if file type with name already exists
 //Ask if write wants to overwrite
@@ -164,7 +212,7 @@ void read_command() {
         return;
     }
     
-    printf("Reading file '%s' of type '%s' (value: %d)\n", name, type_str, type_value);
+    printf("Reading file '%s' of type '%s'\n", name, type_str);
     
     // Call your read_file function with the validated type
     read_file(name, type_value);
@@ -180,28 +228,54 @@ void list_files(){ //list files inside Inode Table
 }
 
 ///////////////////////// System functions ///////////////////////////////////////
-void write(){ //This function will contain SPI processes (refer to page 17 for registers)
-    //Turn off write protect
-    //Write enable instruction
+void eeprom_write(uint32_t address, uint8_t *data, size_t len) {
+    // Example: Write Enable command (0x06)
+    uint8_t cmd_wren = 0x06;
+    spi_transfer(&cmd_wren, NULL, 1);
     
-
-
-    //Turn on write protect
+    // Write command (0x02) + 3 byte address + data
+    uint8_t tx_buf[4 + len];
+    tx_buf[0] = 0x02;  // Page Program command
+    tx_buf[1] = (address >> 16) & 0xFF;
+    tx_buf[2] = (address >> 8) & 0xFF;
+    tx_buf[3] = address & 0xFF;
+    memcpy(&tx_buf[4], data, len);
+    
+    spi_transfer(tx_buf, NULL, 4 + len);
+    
+    // Wait for write to complete (poll status register)
+    usleep(5000);  // Typical write time
 }
 
-void read(){ //This function will contain SPI processes
-    //Take user input
-    scanf("");
-    //Search inode table if file exists
-    //If file doesn't exist
-
-
+int spi_transfer(uint8_t *tx_buf, uint8_t *rx_buf, size_t len) {
+    struct spi_ioc_transfer tr = {
+        .tx_buf = (unsigned long)tx_buf,
+        .rx_buf = (unsigned long)rx_buf,
+        .len = len,
+        .speed_hz = 80000000,
+        .bits_per_word = 8,
+        .cs_change = 0,
+    };
+    
+    return ioctl(spi_fd, SPI_IOC_MESSAGE(1), &tr);
 }
 
-void help(){
-    printf("Available commands: write, read, ls, help, quit");
+void eeprom_read(uint32_t address, uint8_t *data, size_t len) {
+    uint8_t tx_buf[4 + len];
+    uint8_t rx_buf[4 + len];
+    
+    tx_buf[0] = 0x03;  // Read command
+    tx_buf[1] = (address >> 16) & 0xFF;
+    tx_buf[2] = (address >> 8) & 0xFF;
+    tx_buf[3] = address & 0xFF;
+    memset(&tx_buf[4], 0, len);  // Dummy bytes for clock
+    
+    spi_transfer(tx_buf, rx_buf, 4 + len);
+    
+    memcpy(data, &rx_buf[4], len);  // Data starts after 4 command bytes
 }
 
+/////////////////////////// MAIN///////////////////////////////
 int main(){
     mount_fs(); //Keeps trying to run until it can read status
     //Tell user to enter a command
@@ -213,7 +287,7 @@ int main(){
         //loop until exit
         //enter command into hash table
         if(command == "write"){
-            
+            write_command();
         }
         else if(command == "read"){
             read_command();
@@ -229,7 +303,8 @@ int main(){
             break;
         }
         else{
-            printf("ERROR: Please enter a valid command. Type help for list of commands.");
+            printf("%s: command not found", &command);
+            printf("Please enter a valid command. Type help for list of commands.");
         }
     }
 }
