@@ -25,9 +25,9 @@ or as an entirely erasable array
 #include <unistd.h>
 
 //libraries for SPI
-#include <string.h>
-#include <fcntl.h>
-#include <sys/ioctl.h> // for erasing, turning on write protect
+#include <string.h> // functions for memory control
+#include <fcntl.h> // functions for file control; open devices
+#include <sys/ioctl.h> // functions for IO control
 #include <linux/spi/spidev.h> // functions for SPI devices (for EEPROM)
 
 
@@ -40,6 +40,33 @@ or as an entirely erasable array
 #define FILE_TYPE_INVALID -1
 
 static int spi_fd = -1;  //Default is -1; no device connected
+
+// The block map tells the user which blocks are free or not
+typedef struct {
+    uint8_t bitmap[num_blocks];
+    // Each bit represents an available block (0 = free, 1 = used)
+    // 1 byte = 8 bits, 128 bytes / 8 = 16
+    // 16 block rows w/ each bit representing a block
+    uint32_t wear_level[num_blocks];
+    // Wear level represent amount of time used
+    // 4 bits for each block, 15 is lowest priority, 0 is highest priority
+    // We want to use blocks with least amount of use
+    
+} block_map;
+
+//Byte size for the 
+typedef struct superblock_properties{
+    int64_t time_stamp; // Time Stamp of when volume has changed.
+    uint64_t data_size; // Size of Data Area in blocks
+    uint64_t index_size; // Size of Index Area in bytes
+
+    uint8_t magic[3]; // signature ‘KNKFS’ (0x534653)
+    uint8_t version; // SFS version (0x10 = 1.0, 0x1A = 1.10)
+    uint64_t total_blocks; // Total number of blocks in volume (including reserved area)
+    uint32_t rsvd_blocks; // Number of reserved blocks | MIGHT REMOVE!
+    uint8_t blk_size;  // log(x+7) of block size (x = 2 = 512)
+    uint8_t crc; // Zero sum of bytes above 0b11111111 -> 0xFF
+} superblock;
 
 typedef struct { //32 byte block
     char name[12];               // File name (up to 11 chars + null) 12 bytes
@@ -81,23 +108,24 @@ TypeEntry type_map[] = {
 /////////////////////////// Functions ////////////////////////////////
 
 void mount_fs(){ // Mounts driver to file system
-    spi_fd = open("/dev/spidev0.0", O_RDWR);
+    spi_fd = open("/dev/spidev0.0", O_RDWR); //file descripter describes open status
+    //The open system call here grants the device in SPI0 read and write acess
 
-    if (spi_fd < 0) {
+    if (spi_fd < 0) { //If the fd is not a positive value it means it didn't open
         perror("Failed to open SPI device");
         exit(1);
     }
 
-    uint8_t mode = SPI_MODE_0;
+    uint8_t mode = SPI_MODE_0; // 0 CPOL, 0 CPHA; samples on rising edge
     uint8_t bits = 8;
-    uint32_t speed = 80000000; // 80 MHz
+    uint32_t speed = 80000000; // 80 MHz; based on the doc
 
-    if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0) {
+    if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0) { //Tries to set SPI mode to 0
         perror("Failed to set SPI mode");
         exit(1);
     }
 
-    ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
+    ioctl(spi_fd, SPI_IOC_WR_BITS_PER_WORD, &bits); //Binary code length is 8 bits; 2 hex
     ioctl(spi_fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
     
     printf("SPI mounted successfully\n");
@@ -144,6 +172,13 @@ void create_file(char name[12], uint8_t type){
 //If yes remove inode pointer, update blockmap vacancy, update table
 //If no exit from prompt
 
+//Create wear leveling algorithm here
+//Reads block map, selects block based on availability, wear level, itteration
+//Ideal block: availability = 0, wear_level = 0, next itteration
+//Algorithm will look at every block and hold the current best block,
+// If the current best block matches the ideal block it will use it
+// else it will store whatever the current best block is
+
     inode new_file;
     switch (type) {
         //For the test only txt and config will be created
@@ -168,9 +203,10 @@ void create_file(char name[12], uint8_t type){
 
 }
 
+
 /////////////////////// Read functions /////////////////////////////////////////////
 void read_file(char name[12], uint8_t type){
-
+//Checks if file with name and type is in inode table
 
 
 }
@@ -221,13 +257,26 @@ void read_command() {
 //////////////////////////////////////// LIST FILES ////////////////////////////////
 
 void list_files(){ //list files inside Inode Table
-    //Assuming we are mounted
     //Read names of all files in Inode table
     //Read types of files in Inode table
+    //Types are converted to extension
     //Print out file names with file type extension
 }
 
 ///////////////////////// System functions ///////////////////////////////////////
+int spi_transfer(uint8_t *tx_buf, uint8_t *rx_buf, size_t len) {
+    struct spi_ioc_transfer tr = {
+        .tx_buf = (unsigned long)tx_buf,
+        .rx_buf = (unsigned long)rx_buf,
+        .len = len,
+        .speed_hz = 80000000,
+        .bits_per_word = 8,
+        .cs_change = 0,
+    };
+    
+    return ioctl(spi_fd, SPI_IOC_MESSAGE(1), &tr);
+}
+
 void eeprom_write(uint32_t address, uint8_t *data, size_t len) {
     // Example: Write Enable command (0x06)
     uint8_t cmd_wren = 0x06;
@@ -245,19 +294,6 @@ void eeprom_write(uint32_t address, uint8_t *data, size_t len) {
     
     // Wait for write to complete (poll status register)
     usleep(5000);  // Typical write time
-}
-
-int spi_transfer(uint8_t *tx_buf, uint8_t *rx_buf, size_t len) {
-    struct spi_ioc_transfer tr = {
-        .tx_buf = (unsigned long)tx_buf,
-        .rx_buf = (unsigned long)rx_buf,
-        .len = len,
-        .speed_hz = 80000000,
-        .bits_per_word = 8,
-        .cs_change = 0,
-    };
-    
-    return ioctl(spi_fd, SPI_IOC_MESSAGE(1), &tr);
 }
 
 void eeprom_read(uint32_t address, uint8_t *data, size_t len) {

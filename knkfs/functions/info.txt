@@ -12,3 +12,13 @@ CPOL = 1, CPHA = 1
 Input is latched for rising edge
 Data is output on falling edge
     
+In Unix the philosophy is that everything is a file. Therefore my EEPROM is a file, 
+therefore my EEPROM has a filepath given this truth.
+
+reference: https://en.wikipedia.org/wiki/Everything_is_a_file
+
+Inorder for my Raspberry Pi 5 to use SPI I need to enable it in raspi-config.
+Interface Options -> SPI -> Enable
+then reboot
+edit config file
+=> sudo nano /boot/config.txt
