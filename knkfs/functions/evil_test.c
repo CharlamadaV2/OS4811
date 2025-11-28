@@ -124,7 +124,7 @@ void mount_fs() {
 
     uint8_t mode = SPI_MODE_0;  // 0 CPOL, 0 CPHA
     uint8_t bits = 8;
-    uint32_t speed = 8000000;  // 8 MHz (reduced for stability)
+    uint32_t speed = 80000000;  // 80 MHz
 
     if (ioctl(spi_fd, SPI_IOC_WR_MODE, &mode) < 0) {
         perror("Failed to set SPI mode");
@@ -507,6 +507,13 @@ void create_file(char name[12], uint8_t type, uint8_t *content, uint32_t content
     save_filesystem_state();
     
     printf("File '%s' created successfully\n", name);
+}
+
+/////////////////////// Delete Function ////////////////////////////////////////////
+void delete_file(){
+    //Delete file pointers in inode table
+    //Sets blockmap value to 0
+
 }
 
 /////////////////////// Read functions /////////////////////////////////////////////
